@@ -8,6 +8,24 @@ from Big_Data_HiringBase.big_data_scraper.config import USER_AGENTS, REQUEST_TIM
 
 logger = structlog.get_logger()
 
+def job_matches_keyword(job: dict, keyword: str) -> bool:
+    """
+    Check if the job contains the target keyword in its title, tags, or category.
+    """
+    kw = keyword.lower()
+    title = job.get("title", "").lower()
+    category = job.get("category", "").lower()
+    tags = [t.lower() for t in job.get("tags", [])]
+    
+    if kw in title or kw in category:
+        return True
+        
+    for tag in tags:
+        if kw in tag:
+            return True
+            
+    return False
+
 @retry(
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=2, max=10),
@@ -43,6 +61,10 @@ async def fetch_jobs_for_keyword(keyword: str) -> list:
             # Validate essential fields
             job_id = job.get("id")
             if not job_id:
+                continue
+                
+            # Perform local keyword matching filter
+            if not job_matches_keyword(job, keyword):
                 continue
                 
             # Normalize fields

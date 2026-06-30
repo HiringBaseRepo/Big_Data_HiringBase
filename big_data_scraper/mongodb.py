@@ -50,11 +50,15 @@ async def upsert_jobs(jobs_list: list) -> int:
     operations = []
     for job in jobs_list:
         job_id = job["job_id"]
-        # Use update_one with upsert=True based on job_id
+        # Pop keyword so it is only set on insert to prevent generic overrides
+        kw = job.pop("keyword", "")
         operations.append(
             UpdateOne(
                 {"job_id": job_id},
-                {"$set": job},
+                {
+                    "$setOnInsert": {"keyword": kw},
+                    "$set": job
+                },
                 upsert=True
             )
         )
